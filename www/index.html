@@ -1,0 +1,278 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>
+			Cam Builder
+		</title>
+		<link rel="icon" type="image/png" sizes="16x16" href="/cam-builder/favicon.png" >
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, user-scalable=no"
+		/>
+
+		<script src="/cam-builder/chart.umd.min.js"></script>
+		<script src="/cam-builder/lodash.min.js"></script>
+		<script src="/cam-builder/chartjs-plugin-datalabels.min.js"></script>
+
+		<style>
+			html,
+			body {
+				margin: 0;
+				padding: 0;
+			}
+
+			canvas {
+				background-color: #eee;
+				position: absolute;
+				max-width: 100vw;
+				max-height: 100vh;
+			}
+		</style>
+	</head>
+
+	<body>
+		<canvas id="chartJSContainer"></canvas>
+
+		<script>
+			// demo environment build
+
+			Chart.Interaction.modes.maxValueCustomMode = function maxValueCustomMode(
+				chart,
+				e,
+				options,
+				useFinalPosition,
+			) {
+				const nearestItems = Chart.Interaction.modes.nearest(
+					chart,
+					e,
+					{ axis: "x", intersect: false },
+					useFinalPosition,
+				);
+				let maxItem = null,
+					maxValue = -Infinity;
+				for (const item of nearestItems) {
+					const value =
+						chart.data.datasets[item.datasetIndex].data[item.index].y;
+					if (value > maxValue) {
+						maxValue = value;
+						maxItem = item;
+					}
+				}
+				return maxItem ? [maxItem] : [];
+			};
+
+			const isFirefox = navigator.userAgent.match(/firefox|fxios/i),
+				chartConfiguration = {
+					type: "line",
+					options: {
+						interaction: { mode: "maxValueCustomMode" },
+						plugins: { 
+                            datalabels: { display: false },
+                            legend: { 
+                                display: false
+                            },
+                        },
+						scales: {
+							x: { type: 'linear', min: 0, max: 360 , ticks: {stepSize: 45}},
+							y: { min: 0, max: 360 , ticks: {stepSize: 45}},
+						},
+					},
+					data: {
+						labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+						datasets: [
+							{
+								label: "Slave Position",
+								data: [
+									{ x: 0, y: 0 },
+									{ x: 60, y: 90 },
+									{ x: 120, y: 180 },
+									{ x: 180, y: 45 },
+									{ x: 240, y: 180 },
+									{ x: 300, y: 90 },
+                                    { x: 360, y: 0 },
+								],
+								fill: true,
+                                cubicInterpolationMode: 'monotone',
+								borderWidth: 1,
+								pointHitRadius: 25,
+							},
+						],
+					},
+				};
+
+			window.isPluginLoaded = false;
+
+			window.setupChart = function setupChart(options) {
+				// demo config loading
+				const {
+					disablePlugin,
+					draggableAxis,
+					roundingPrecision,
+					renderOnHoverCirclesTrail = false,
+				} = options;
+				const isTest = false;
+
+				let onDrag = undefined;
+
+				function onPluginScriptLoaded() {
+					if (!window.isPluginLoaded) console.log("Plugin script loaded");
+					window.isPluginLoaded = true;
+
+					const bothAxesDraggable = draggableAxis === "both",
+						xAxisDraggable =
+							!draggableAxis || bothAxesDraggable || draggableAxis === "x",
+						yAxisDraggable = bothAxesDraggable || draggableAxis === "y";
+
+					function drawDragMarker(e) {
+						// demo environment stub
+					}
+
+					const configuration = _.merge(
+						{
+							options: {
+								animation: !isTest,
+								plugins: {
+									dragData: disablePlugin
+										? false
+										: {
+												dragX: xAxisDraggable,
+												dragY: yAxisDraggable,
+												round: 0,
+												showTooltip: true,
+												onDragStart: function (e) {
+													if (renderOnHoverCirclesTrail) drawDragMarker(e);   
+												},
+												onDrag: function (...args) {
+													const [e] = args;
+													if (e.target?.style)
+														e.target.style.cursor = "grabbing";
+
+													onDrag?.(...args);
+													if (renderOnHoverCirclesTrail) drawDragMarker(e);
+												},
+												onDragEnd: function (e) {
+                                                    visibleDataset = window.testedChart.getSortedVisibleDatasetMetas()
+													fetch('/cam-builder', {
+														method: 'POST',
+														headers: {
+															'Content-Type': 'application/json'
+														},
+														body: JSON.stringify(visibleDataset[0]._parsed)
+													})
+                                                    console.log(visibleDataset[0]._parsed)
+													if (e.target?.style)
+														e.target.style.cursor = "default";
+
+													if (renderOnHoverCirclesTrail) drawDragMarker(e);
+												},
+											},
+								},
+								onHover: function (e) {
+                                    //console.log(e.chart.getSortedVisibleDatasetMetas())
+									const point = e.chart.getElementsAtEventForMode(
+										e,
+										e.chart.options.interaction.mode,
+										{ intersect: true },
+										false,
+									);
+									if (point.length){
+                                        e.native.target.style.cursor = "grab";
+                                    } else {
+                                        e.native.target.style.cursor = "default";
+                                    }
+								},
+							},
+						},
+						{
+							...chartConfiguration,
+							options: {
+								...chartConfiguration.options,
+								plugins: {
+									...(chartConfiguration.options.plugins ?? {}),
+									datalabels: {
+										...(chartConfiguration.options.plugins?.datalabels ?? {}),
+										...(chartConfiguration.options.plugins?.datalabels?.display
+											? {
+													formatter: function (value, context) {
+														return (
+															dateFns.differenceInDays(value[1], value[0]) + "d"
+														);
+													},
+												}
+											: {}),
+									},
+								},
+							},
+							data: {
+								...chartConfiguration.data,
+								...(chartConfiguration.scales?.x?.type === "time"
+									? {
+											datasets: chartConfiguration.data.datasets.map((d) => ({
+												...d,
+												data: d.data.map((darr) =>
+													darr.map((date) => new Date(date)),
+												),
+											})),
+										}
+									: {}),
+							},
+						},
+					);
+
+					var ctx = document
+						.getElementById("chartJSContainer")
+						.getContext("2d");
+					Chart.register(ChartDataLabels);
+					window.testedChart = new Chart(ctx, configuration);
+
+					let originalTestedChartData = _.cloneDeep(window.testedChart.data);
+					window.resetData = function resetData() {
+						console.log(
+							"[resetData] Resetting data to original data passed to setupChart()",
+							originalTestedChartData,
+						);
+
+						window.testedChart.data = _.cloneDeep(originalTestedChartData);
+						window.testedChart.update("none");
+					};
+
+					window.isTestReady = true;
+				}
+
+				if (window.isPluginLoaded) {
+					onPluginScriptLoaded();
+				} else {
+					// load the plugin script dynamically - either with IstanbulJS's coverage statements or not, depending on the value of isTest
+					let scriptElement = document.createElement("script");
+					scriptElement.src = isTest
+						? "assets/chartjs-plugin-dragdata-test-browser.js"
+						: "/cam-builder/chartjs-plugin-dragdata.min.js";
+
+					console.log("Loading plugin script from:", scriptElement.src);
+
+					scriptElement.onload = onPluginScriptLoaded;
+					document.head.appendChild(scriptElement);
+				}
+			};
+
+			document.body.onload = function onBodyLoaded() {
+				let urlSearchParams = new URLSearchParams(window.location.search);
+
+				if (
+					!urlSearchParams.has("isTest") ||
+					urlSearchParams.get("isTest") !== "true"
+				) {
+					console.log("Demo build running");
+
+					setupChart({
+						isTest: false,
+						disablePlugin: false,
+						draggableAxis: "y",
+						roundingPrecision: 2,
+					});
+				}
+			};
+		</script>
+	</body>
+</html>
