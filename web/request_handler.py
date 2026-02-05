@@ -209,6 +209,31 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
             self.wfile.write(htmlX.encode("utf-8"))
             return
+        
+        # Read Position Array
+        if self.path.endswith("position-array"):
+            
+            # content_length = int(self.headers['Content-Length'])
+            # content = self.rfile.read(content_length).decode("utf-8")
+            # print("POST", str(content), flush=True)
+
+
+            RequestHandler.readPath = RequestHandler.posArrayPath
+
+            # ctrlX Data Layer access
+            RequestHandler.readResult, RequestHandler.readValue = data_layer.read_node(
+                RequestHandler.readPath)
+
+            print("Pos array read: ", str(RequestHandler.readValue), flush=True)
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            resp = RequestHandler.readValue
+            self.wfile.write(resp.encode('utf-8'))
+            
+
+            return
 
         self.send_response(404)
 

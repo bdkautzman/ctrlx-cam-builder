@@ -113,7 +113,7 @@ def provide_string(provider: ctrlxdatalayer.provider, nodeAddress: str,
     # Create and register simple string provider node
     print("Creating string  provider node " + nodeAddress, flush=True)
     variantString = Variant()
-    variantString.set_string("[{ x: 0, y: 0 },{ x: 60, y: 90 },{ x: 120, y: 180 },{ x: 180, y: 45 },{ x: 240, y: 180 },{ x: 300, y: 90 },{ x: 360, y: 0 }]")
+    variantString.set_string('[{"x":0,"y":0},{"x":60,"y":"90"},{"x":120,"y":270},{"x":180,"y":45},{"x":240,"y":135},{"x":300,"y":135},{"x":360,"y":0}]')
     return provide_node(provider, nodeAddress, typeAddress, variantString)
 
 
