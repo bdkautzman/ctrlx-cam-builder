@@ -150,11 +150,16 @@ def run_webserver_tcp():
         print(
             "------------------Copy this link into the address field of your browser ----------------------"
         )
+        # print(
+        #     "http://localhost:"
+        #     + str(httpServerPort)
+        #     + "/cam-builder?token="
+        #     + token
+        # )
         print(
             "http://localhost:"
             + str(httpServerPort)
-            + "/cam-builder?token="
-            + token
+            + "/cam-builder"
         )
         print(
             "----------------------------------------------------------------------------------------------",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.boschrexroth.com/ctrlx-automation/ctrlx-core/apps/package-manifest/package-manifest.v1.4.schema.json",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "id": "cam-builder",
   "scopes-declaration": [
     {
@@ -38,7 +38,7 @@
         "target": "_blank",
         "title": "Cam Builder",
         "icon": "bosch-ic-worldwideweb",
-        "link": "/cam-builder?token=${bearertoken}"
+        "link": "/cam-builder"
       }
     ],
     "settings": [],
@@ -47,7 +47,7 @@
         "id": "cam-builder",
         "title": "Cam Builder",
         "icon": "bosch-ic-worldwideweb",
-        "link": "/cam-builder?token=${bearertoken}"
+        "link": "/cam-builder"
       }
     ]
   }

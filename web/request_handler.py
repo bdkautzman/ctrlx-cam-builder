@@ -147,69 +147,6 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_file_response('text/javascript')
             return
 
-        # HTML
-        if self.path.startswith("/cam-builder?token="):
-
-            # Parsing bearer token from url
-            parsedUrl = parse_qs(urlparse(self.path).query)
-            token = ''
-            if 'token' in parsedUrl:
-                token = parsedUrl['token'][0]
-
-            # check user permissions of token
-            scopes_list = ["rexroth-device.all.rwx",
-                           "rexroth-python-webserver.web.r", "rexroth-python-webserver.web.rw"]
-            permissions_json = web.web_token.check_permissions(
-                token, scopes_list)
-
-            # if token is invalid
-            if permissions_json is None:
-
-                # self.write_www_file(content_type='text/html', rel_path='www/html-invalid-token.html')
-                self.send_html_file_response(rel_path='www/invalid-token.html')
-                return
-
-            self.send_response_and_header(200, 'text/html')
-
-            # Read HTML page from file and replace static with dynamic content
-            path = self.get_www_file_path('/www/index.html')
-            htmlX = open(path).read().replace('$(token)', token)
-
-            # Enable/disable HTML objects according permissions
-            permissions_read = permissions_json['rexroth-device.all.rwx'] or permissions_json[
-                'rexroth-python-webserver.web.rw'] or permissions_json['rexroth-python-webserver.web.r']
-            permissions_write = permissions_json['rexroth-device.all.rwx'] or permissions_json['rexroth-python-webserver.web.rw']
-            htmlX = htmlX.replace(
-                '$(permissions_read_text)', '' if permissions_read else "'disabled'")  # Text must be surrounded by ' '
-            htmlX = htmlX.replace(
-                '$(permissions_write_text)', '' if permissions_write else "'disabled'")  # Text must be surrounded by ' '
-
-            # Set read content
-            htmlX = htmlX.replace('$(Server.readPath)',
-                                  str(RequestHandler.readPath))
-            htmlX = htmlX.replace('$(Server.readValue)',
-                                  str(RequestHandler.readValue))
-            htmlX = htmlX.replace('$(Server.readResult)',
-                                  str(RequestHandler.readResult))
-
-            htmlX = htmlX.replace('$(Server.writePath)',
-                                  str(RequestHandler.writePath))
-            htmlX = htmlX.replace('$(Server.writeValue)',
-                                  str(RequestHandler.writeValue))
-            htmlX = htmlX.replace('$(Server.writeResult)',
-                                  str(RequestHandler.writeResult))
-
-            # Show permissions: 'True' or 'False'
-            htmlX = htmlX.replace('$(permissions_rwx)', str(
-                permissions_json['rexroth-device.all.rwx']))
-            htmlX = htmlX.replace('$(permissions_rw)', str(
-                permissions_json['rexroth-python-webserver.web.rw']))
-            htmlX = htmlX.replace('$(permissions_r)', str(
-                permissions_json['rexroth-python-webserver.web.r']))
-
-            self.wfile.write(htmlX.encode("utf-8"))
-            return
-        
         # Read Position Array
         if self.path.endswith("position-array"):
             
@@ -234,6 +171,73 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             
 
             return
+
+        # HTML
+        if self.path.startswith("/cam-builder"):
+
+            # # Parsing bearer token from url
+            # parsedUrl = parse_qs(urlparse(self.path).query)
+            # token = ''
+            # if 'token' in parsedUrl:
+            #     token = parsedUrl['token'][0]
+
+            # # check user permissions of token
+            # scopes_list = ["rexroth-device.all.rwx",
+            #                "rexroth-python-webserver.web.r", "rexroth-python-webserver.web.rw"]
+            # permissions_json = web.web_token.check_permissions(
+            #     token, scopes_list)
+
+            # # if token is invalid
+            # if permissions_json is None:
+
+            #     # self.write_www_file(content_type='text/html', rel_path='www/html-invalid-token.html')
+            #     self.send_html_file_response(rel_path='www/invalid-token.html')
+            #     return
+
+            self.send_response_and_header(200, 'text/html')
+
+            # # Read HTML page from file and replace static with dynamic content
+            # path = self.get_www_file_path('/www/index.html')
+            # htmlX = open(path).read().replace('$(token)', token)
+
+            # # Enable/disable HTML objects according permissions
+            # permissions_read = permissions_json['rexroth-device.all.rwx'] or permissions_json[
+            #     'rexroth-python-webserver.web.rw'] or permissions_json['rexroth-python-webserver.web.r']
+            # permissions_write = permissions_json['rexroth-device.all.rwx'] or permissions_json['rexroth-python-webserver.web.rw']
+            # htmlX = htmlX.replace(
+            #     '$(permissions_read_text)', '' if permissions_read else "'disabled'")  # Text must be surrounded by ' '
+            # htmlX = htmlX.replace(
+            #     '$(permissions_write_text)', '' if permissions_write else "'disabled'")  # Text must be surrounded by ' '
+
+            # # Set read content
+            # htmlX = htmlX.replace('$(Server.readPath)',
+            #                       str(RequestHandler.readPath))
+            # htmlX = htmlX.replace('$(Server.readValue)',
+            #                       str(RequestHandler.readValue))
+            # htmlX = htmlX.replace('$(Server.readResult)',
+            #                       str(RequestHandler.readResult))
+
+            # htmlX = htmlX.replace('$(Server.writePath)',
+            #                       str(RequestHandler.writePath))
+            # htmlX = htmlX.replace('$(Server.writeValue)',
+            #                       str(RequestHandler.writeValue))
+            # htmlX = htmlX.replace('$(Server.writeResult)',
+            #                       str(RequestHandler.writeResult))
+
+            # # Show permissions: 'True' or 'False'
+            # htmlX = htmlX.replace('$(permissions_rwx)', str(
+            #     permissions_json['rexroth-device.all.rwx']))
+            # htmlX = htmlX.replace('$(permissions_rw)', str(
+            #     permissions_json['rexroth-python-webserver.web.rw']))
+            # htmlX = htmlX.replace('$(permissions_r)', str(
+            #     permissions_json['rexroth-python-webserver.web.r']))
+
+            path = self.get_www_file_path('/www/index.html')
+            htmlX = open(path).read()
+
+            self.wfile.write(htmlX.encode("utf-8"))
+            return
+        
 
         self.send_response(404)
 
